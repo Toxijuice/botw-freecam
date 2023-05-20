@@ -31,6 +31,7 @@ use utils::{check_key_press, error_message, handle_keyboard, Input, Keys};
 use std::io::{self, Write};
 use std::mem::MaybeUninit;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use colored::*;
 
 fn write_red(msg: &str) -> io::Result<()> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
