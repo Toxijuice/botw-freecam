@@ -15,6 +15,7 @@ use windows_sys::Win32::{
     }, WindowsAndMessaging::MessageBoxA},
 };
 
+use colored::*;
 use log::*;
 use simplelog::*;
 
