@@ -72,7 +72,9 @@ pub struct Input {
     pub any_shoulder_held: bool,
     pub both_shoulders_held: bool,
     pub any_dpad_held: bool,
+    pub left_thumb_held: bool,
 
+    pub fov_preset_index: i32,
     pub rot_speed: f32,
     pub delta_sign_x: f32,
     pub delta_sign_y: f32,
@@ -83,17 +85,19 @@ pub struct Input {
 impl Input {
     pub fn new() -> Input {
         Self {
-            fov: 0.92,
+            fov: 0.8726647,
             engine_speed: MINIMUM_ENGINE_SPEED,
             speed_multiplier: 1.,
             dolly_duration: 10.,
             dolly_increment: 0.01,
+            fov_preset_index: -1,
             rot_speed: 0.75,
             delta_sign_x: 1.,
             delta_sign_y: 1.,
             any_shoulder_held: false,
             both_shoulders_held: false,
             any_dpad_held: false,
+            left_thumb_held: false,
             rot_shift_x: 0.78539816,
             rot_shift_y: 0.6981317,
             ..Input::default()
@@ -298,7 +302,7 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
             input.delta_rotation = 0.;
             println!("{} {}", "Camera roll".bright_white(), "reset".bright_blue());
         }
-        
+
         input.both_shoulders_held = true;
     }
     else {
@@ -308,13 +312,43 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     // B
     if (gp.wButtons & 0x2000) != 0 {
         input.fov += 0.005;
-        println!("{} {}", "FOV:".bright_white(), input.fov.to_string().bright_blue());
+        println!("{}{}", "FOV: ".bright_white(), input.fov.to_string().bright_blue());
     }
 
     // Y
     if (gp.wButtons & 0x8000) != 0 {
         input.fov -= 0.005;
-        println!("{} {}", "FOV:".bright_white(), input.fov.to_string().bright_blue());
+        println!("{}{}", "FOV: ".bright_white(), input.fov.to_string().bright_blue());
+    }
+
+    // Left thumb
+    if (gp.wButtons & (0x0040)) != 0 {
+        if !input.left_thumb_held {
+            input.fov_preset_index += 1;
+            input.fov_preset_index %= 4; // Preset count
+
+            // This is dumb but I don't know how arrays work in Rust
+            if input.fov_preset_index == 0 {
+                input.fov = 1.02477892093;
+                println!("{}{}", "FOV Preset: ".bright_white(), "90°".bright_blue());
+            } else if input.fov_preset_index == 1 {
+                input.fov = 0.8726647;
+                println!("{}{}", "FOV Preset: ".bright_white(), "~79° (default)".bright_blue());
+            } else if input.fov_preset_index == 2 {
+                input.fov = 0.814931329159;
+                println!("{}{}", "FOV Preset: ".bright_white(), "75°".bright_blue());
+            } else if input.fov_preset_index == 3 {
+                input.fov = 0.457822332671;
+                println!("{}{}", "FOV Preset: ".bright_white(), "45°".bright_blue());
+            }
+            
+            println!("{}{}", "FOV: ".bright_white(), input.fov.to_string().bright_blue());
+        }
+        
+        input.left_thumb_held = true;
+    }
+    else {
+        input.left_thumb_held = false;
     }
 
     input.delta_altitude += -(gp.bLeftTrigger as f32) / 5e3;
