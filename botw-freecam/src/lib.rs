@@ -29,16 +29,7 @@ use dolly::*;
 use globals::*;
 use utils::{check_key_press, error_message, handle_keyboard, Input, Keys};
 
-use std::io::{self, Write};
 use std::mem::MaybeUninit;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
-fn write_red(msg: &str) -> io::Result<()> {
-    let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-    writeln!(&mut stdout, "{}", msg)?;
-    stdout.reset()
-}
 
 unsafe extern "system" fn wrapper(lib: *mut c_void) -> u32 {
     AllocConsole();
@@ -107,12 +98,12 @@ fn get_camera_function() -> Result<CameraOffsets, Box<dyn std::error::Error>> {
     // So we'll wait until the game is in the world and the code will be recompiled, then the pointer should be changed to the right function.
     // Once is resolved, we can lookup the rest of the functions since the camera we assume the camera is active
     let dummy_pointer = array[0];
-    info!("Waiting for the game to start");
+    println!("{}", "Waiting for the game to start...".bright_white());
     let camera_offset = loop {
         let function_start = array[0x2C085FC / 4];
 
         if dummy_pointer != function_start {
-            info!("Pointer found");
+            println!("{}", "Pointer found!".bright_white());
             break function_start + 0x7E;
         }
         std::thread::sleep(std::time::Duration::from_secs(1))
@@ -160,21 +151,36 @@ fn block_xinput(proc_inf: &ProcessInfo) -> Result<Detour, Box<dyn std::error::Er
         )
     };
 
-    println!("{:x?}", unsafe {
-        &asm_override_xinput_call as *const _ as usize
-    });
+    println!("{}\n\t{}{}",
+        "XInput Function".bright_white(), // Totally unsure about this
+        "pointer: ".bright_blue(),
+        format!("{:x?}", unsafe {
+            &asm_override_xinput_call as *const _ as usize
+        }).bright_cyan()
+    );
 
     Ok(injection)
 }
 
 fn patch(_lib: *mut c_void) -> Result<(), Box<dyn std::error::Error>> {
-    info!(
-        "Breath of the Wild freecam by @etra0, v{}",
-        utils::get_version()
+    println!(
+        "{}{}{}{}",
+        "Breath of the Wild freecam by".bright_white(),
+        " @etra0, ".bright_cyan().bold(),
+        "v".bright_blue(),
+        utils::get_version().to_string().bright_blue()
     );
-    write_red("If you close this window the game will close. Use HOME to deattach the freecamera (will close this window as well).")?;
+
+    println!(
+        "{}{}{}{}",
+        "If you close this window the game will close. ".bright_red(),
+        "Use ".bright_white(),
+        "HOME".bright_blue().bold(),
+        " to deattach the freecamera.".bright_white()
+    );
+
     println!("{}", utils::INSTRUCTIONS);
-    write_red("Controller input will only be detected if Xinput is used in the Control settings, otherwise use the keyboard.")?;
+    println!("{}","Controller input will only be detected if Xinput is used in the Control settings.".bright_red());
     let proc_inf = ProcessInfo::new(None)?;
 
     let mut input = Input::new();
@@ -188,9 +194,20 @@ fn patch(_lib: *mut c_void) -> Result<(), Box<dyn std::error::Error>> {
     let mut starting_point: Option<CameraSnapshot> = None;
 
     let camera_struct = get_camera_function()?;
-    info!("{:x?}", camera_struct);
+    // camera_struct.
+    println!(
+        "{}\n\t{}{}\n\t{}{}",
+        "Camera Offsets: ".bright_white(),
+        "camera: ".bright_blue(),
+        format!("{:x}", camera_struct.camera).bright_cyan(),
+        "rotation_vec1: ".bright_blue(),
+        format!("{:x}", camera_struct.rotation_vec1).bright_cyan(),
+    );
     let camera_pointer = camera_struct.camera;
-    info!("Camera function camera_pointer: {:x}", camera_pointer);
+    println!("{}\n\t{}{}","Camera Function ".bright_white(),
+        "camera_pointer: ".bright_blue(),
+        format!("{:x}", camera_pointer).bright_cyan()
+    );
 
     let mut cam = unsafe {
         Detour::new(
@@ -263,7 +280,7 @@ fn patch(_lib: *mut c_void) -> Result<(), Box<dyn std::error::Error>> {
             unsafe {
                 g_camera_active = active as u8;
             }
-            info!("Camera is {}", active);
+            println!("{}{}", "Camera is ".bright_white(), active.to_string().bright_blue());
 
             if active {
                 input.reset();
@@ -335,7 +352,11 @@ fn patch(_lib: *mut c_void) -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     nops.last_mut().unwrap().inject();
                 }
-                info!("Unlock character: {}", input.unlock_character);
+                println!(
+                    "{}{}",
+                    "Unlock character: ".bright_white(),
+                    input.unlock_character.to_string().bright_blue()
+                );
                 std::thread::sleep(std::time::Duration::from_millis(500));
             }
 
