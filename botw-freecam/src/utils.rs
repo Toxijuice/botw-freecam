@@ -13,7 +13,7 @@ const DEADZONE: i16 = 10000;
 const MINIMUM_ENGINE_SPEED: f32 = 1e-3;
 
 pub const INSTRUCTIONS: &str =
-"Read instructions.txt for controls.";
+"Read info.txt for controls.";
 
 const CARGO_VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const GIT_VERSION: Option<&'static str> = option_env!("GIT_VERSION");
@@ -203,11 +203,11 @@ pub fn handle_keyboard(input: &mut Input) {
     if check_key_press(Keys::P as _) {
         input.dolly_duration += input.dolly_increment;
         input.dolly_increment *= 1.01;
-        println!("Duration: {}", input.dolly_duration);
+        println!("{}{}", "Duration: ".bright_white(), input.dolly_duration.to_string().bright_blue());
     } else if check_key_press(Keys::O as _) {
         input.dolly_duration -= input.dolly_increment;
         input.dolly_increment *= 1.01;
-        println!("Duration: {}", input.dolly_duration);
+        println!("{}{}", "Duration: ".bright_white(), input.dolly_duration.to_string().bright_blue());
     } else {
         input.dolly_increment = 0.01
     }
@@ -441,7 +441,7 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
             input.delta_focus = (0., 0.);
             input.delta_rotation = 0.;
             input.reset_rot = true;
-            println!("{}{}", "Camera rot ".bright_white(), "reset".bright_blue());
+            println!("{}{}", "Camera rotation ".bright_white(), "reset".bright_blue());
         }
         
         input.right_thumb_held = true;
@@ -451,13 +451,13 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     }
 
 
-    if input.delta_focus.0 != 0. {
-        println!("{} {}", "rot dx:".bright_white(), input.delta_focus.0.to_string().bright_blue());
-    }
+    // if input.delta_focus.0 != 0. {
+    //     println!("{} {}", "rot dx:".bright_white(), input.delta_focus.0.to_string().bright_blue());
+    // }
 
-    if input.delta_focus.1 != 0. {
-        println!("{} {}", "rot dy:".bright_white(), input.delta_focus.1.to_string().bright_blue());
-    }
+    // if input.delta_focus.1 != 0. {
+    //     println!("{} {}", "rot dy:".bright_white(), input.delta_focus.1.to_string().bright_blue());
+    // }
 
     input.delta_altitude *= input.speed_multiplier;
 }
