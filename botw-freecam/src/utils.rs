@@ -40,9 +40,9 @@ const GIT_VERSION: Option<&'static str> = option_env!("GIT_VERSION");
 /// latest git version and the cargo verison.
 pub fn get_version() -> String {
     let cargo = CARGO_VERSION.unwrap_or("Unknown");
-    let git = GIT_VERSION.unwrap_or("Unknown");
+    let git = GIT_VERSION.unwrap_or("");
 
-    return format!("{}.{}", cargo, git);
+    return format!("{} {}", cargo, git);
 }
 
 /// Keys that aren't contained in the VirtualKeys from the Windows API.
@@ -252,7 +252,7 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     func(0, &mut xs);
 
     let gp = xs.Gamepad;
-
+    
     // [wButtons]
     // XINPUT_GAMEPAD_DPAD_UP 	        0x0001
     // XINPUT_GAMEPAD_DPAD_DOWN 	    0x0002
