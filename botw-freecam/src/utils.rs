@@ -69,10 +69,10 @@ pub struct Input {
 
     pub unlock_character: bool,
 
-    pub roll_reset_frames: f32,
-    pub rot_reset_frames: f32,
-    pub roll_reset_max_frames: f32,
-    pub rot_reset_max_frames: f32,
+    pub any_shoulder_held: bool,
+    pub both_shoulders_held: bool,
+    pub any_dpad_held: bool,
+
     pub rot_speed: f32,
     pub delta_sign_x: f32,
     pub delta_sign_y: f32,
@@ -88,13 +88,12 @@ impl Input {
             speed_multiplier: 1.,
             dolly_duration: 10.,
             dolly_increment: 0.01,
-            roll_reset_frames: 0.,
-            rot_reset_frames: 0.,
-            roll_reset_max_frames: 10.,
-            rot_reset_max_frames: 30.,
             rot_speed: 0.75,
             delta_sign_x: 1.,
             delta_sign_y: 1.,
+            any_shoulder_held: false,
+            both_shoulders_held: false,
+            any_dpad_held: false,
             rot_shift_x: 0.78539816,
             rot_shift_y: 0.6981317,
             ..Input::default()
@@ -271,25 +270,39 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
         println!("{} {}", "Speed:".bright_white(), input.speed_multiplier.to_string().bright_blue());
     }
 
-    // Only allow rolling after some frames have passed from resetting roll
-    if input.roll_reset_frames <= 0.{
-        // Right shoulder
-        if (gp.wButtons & (0x0200)) != 0 {
+    // Right shoulder
+    if (gp.wButtons & (0x0200)) != 0 {
+        if !input.any_shoulder_held {
             input.delta_rotation += 1.57079633; // Roll camera 90deg
             println!("{} {}", "Camera rolled".bright_white(), "90°".bright_blue());
         }
-
-        // Left shoulder
-        if (gp.wButtons & (0x0100)) != 0 {
+        
+        input.any_shoulder_held = true;
+    }
+    // Left shoulder
+    else if (gp.wButtons & (0x0100)) != 0 {
+        if !input.any_shoulder_held {
             input.delta_rotation += -1.57079633; // Roll camera -90deg
             println!("{} {}", "Camera rolled".bright_white(), "-90°".bright_blue());
         }
+
+        input.any_shoulder_held = true;
+    }
+    else {
+        input.any_shoulder_held = false;
     }
 
+    // Both shoulders
     if (gp.wButtons & (0x0200 | 0x0100)) == (0x0200 | 0x0100) {
-        input.delta_rotation = 0.;
-        input.roll_reset_frames = input.roll_reset_max_frames;
-        println!("{} {}", "Camera roll".bright_white(), "reset".bright_blue());
+        if !input.both_shoulders_held {
+            input.delta_rotation = 0.;
+            println!("{} {}", "Camera roll".bright_white(), "reset".bright_blue());
+        }
+        
+        input.both_shoulders_held = true;
+    }
+    else {
+        input.both_shoulders_held = false;
     }
 
     // B
@@ -346,29 +359,37 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     input.delta_focus.0 = input.delta_focus.0 * (input.fov + 0.01) * input.rot_speed;
     input.delta_focus.1 = input.delta_focus.1 * (input.fov + 0.01) * input.rot_speed;
 
-    // Only allow rotating after some frames have passed
-    if input.rot_reset_frames <= 0.{
-        // DPAD Up
-        if (gp.wButtons & (0x0001)) != 0 {
-            input.delta_focus.1 = -input.rot_shift_y;
-            input.rot_reset_frames = input.rot_reset_max_frames;
-        } 
-        // DPAD Down
-        else if (gp.wButtons & (0x0002)) != 0 {
-            input.delta_focus.1 = input.rot_shift_y;
-            input.rot_reset_frames = input.rot_reset_max_frames;
-        }
 
-        // DPAD Left
-        if (gp.wButtons & (0x0004)) != 0 {
-            input.delta_focus.0 = -input.rot_shift_x;
-            input.rot_reset_frames = input.rot_reset_max_frames;
-        } 
-        // DPAD Right
-        else if (gp.wButtons & (0x0008)) != 0 {
-            input.delta_focus.0 = input.rot_shift_x;
-            input.rot_reset_frames = input.rot_reset_max_frames;
+    // DPAD Up
+    if (gp.wButtons & (0x0001)) != 0 {
+        if !input.any_dpad_held {
+            input.delta_focus.1 = -input.rot_shift_y;
         }
+        input.any_dpad_held = true;
+    } 
+    // DPAD Down
+    else if (gp.wButtons & (0x0002)) != 0 {
+        if !input.any_dpad_held {
+            input.delta_focus.1 = input.rot_shift_y;
+        }
+        input.any_dpad_held = true;
+    }
+    // DPAD Left
+    else if (gp.wButtons & (0x0004)) != 0 {
+        if !input.any_dpad_held {
+            input.delta_focus.0 = -input.rot_shift_x;
+        }
+        input.any_dpad_held = true;
+    } 
+    // DPAD Right
+    else if (gp.wButtons & (0x0008)) != 0 {
+        if !input.any_dpad_held {
+            input.delta_focus.0 = input.rot_shift_x;
+        }
+        input.any_dpad_held = true;
+    }
+    else {
+        input.any_dpad_held = false;
     }
 
 
@@ -381,9 +402,6 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     }
 
     input.delta_altitude *= input.speed_multiplier;
-
-    if input.rot_reset_frames > 0. { input.rot_reset_frames = input.rot_reset_frames - 1.; }
-    if input.roll_reset_frames > 0. { input.roll_reset_frames = input.roll_reset_frames - 1.; }
 }
 
 #[no_mangle]
