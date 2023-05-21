@@ -1,7 +1,64 @@
-== CONTROLS =====================================
+== BREATH OF THE WILD FREECAM ====================
+This is a modification of botw-freecam by etra0.
+Original: https://github.com/etra0/botw-freecam
+Modded: https://github.com/Toxijuice/botw-freecam
+
+== INFO ==========================================
+This program allows you to unlock the camera and
+move it freely within Breath of the Wild, running
+on Cemu.
+
+Tested on Cemu 1.26.2
+Designed for BotW v1.5.0 / DLC v3.0
+YMMV on other versions.
+
+== CHANGES FROM ORIGINAL =========================
+This version of botw-freecam differs from the
+original in the following ways:
+
+- Minor console log changes
+- Added ability to use differently-named Cemu.exe
+- Camera rotation speed changes depending on FOV
+- Changed gamepad control layout
+- Roll now goes in 90° increments
+- Can rotate camera horizontally in 45° increments
+- Can rotate camera vertically in 40° increments
+- Can reset camera rotation
+- Can cycle between a few FOV presets
+- Other things I probably forgot
+
+At this time, most of the functionality added and
+changed is only available via gamepad.
+
+== HOW TO USE ====================================
+1. Run Cemu
+2. Start Breath of the Wild
+3. Load your save (or start a new game)
+4. Run botw-freecam.exe
+
+Close freecam with the HOME key. Otherwise, if
+you manually close the console window, Cemu will
+also be closed.
+
+== LAUNCH ARGUMENTS ==============================
+You can change the target process name with the 
+launch argument --targetprocess
+
+This is useful if your Cemu exe uses a different
+filename.
+
+Example: 
+botw-freecam.exe --targetprocess anselintegrationtestapp.exe
+
+== CONTROLS ======================================
 NOTE: Gamepad controls are written assuming an
 Xbox-style layout. Keep that in mind if using 
-something like DS4Windows.
+another controller type.
+
+NOTE: Gamepad requires you use XInput in Cemu.
+You may need to use something like DS4Windows to
+achieve this with some controllers.
+
 
 [KEYBOARD]
 HOME ---------- Close Freecam
@@ -61,4 +118,24 @@ LB + RB ------- Roll Reset
 LT ------------ Descend
 RT ------------ Ascend
 
-=================================================
+== SUPPORT =======================================
+You can give support to etra0 at:
+https://ko-fi.com/etra0
+
+NOTE: This does not support me (Toxijuice).
+I only modified what they put together. While I
+did put effort into making this version work the
+way I want, they deserve the support for doing 
+the heavy lifting.
+
+== SEE ALSO =====================================
+Cemu 1.26.2f:
+https://wiki.cemu.info/wiki/Release_1.26.2f
+
+DS4Windows:
+https://github.com/Ryochan7/DS4Windows
+
+Stop Time and LOD Enhancement:
+https://gamebanana.com/tools/7052
+
+==================================================
