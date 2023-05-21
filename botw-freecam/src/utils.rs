@@ -87,9 +87,9 @@ pub struct Input {
 
     pub unlock_character: bool,
 
-    pub tilt_reset_frames: f32,
+    pub roll_reset_frames: f32,
     pub rot_reset_frames: f32,
-    pub tilt_reset_max_frames: f32,
+    pub roll_reset_max_frames: f32,
     pub rot_reset_max_frames: f32,
     pub rot_speed: f32,
     pub delta_sign_x: f32,
@@ -106,9 +106,9 @@ impl Input {
             speed_multiplier: 1.,
             dolly_duration: 10.,
             dolly_increment: 0.01,
-            tilt_reset_frames: 0.,
+            roll_reset_frames: 0.,
             rot_reset_frames: 0.,
-            tilt_reset_max_frames: 10.,
+            roll_reset_max_frames: 10.,
             rot_reset_max_frames: 30.,
             rot_speed: 0.75,
             delta_sign_x: 1.,
@@ -289,25 +289,25 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
         println!("{} {}", "Speed:".bright_white(), input.speed_multiplier.to_string().bright_blue());
     }
 
-    // Only allow tilting after some frames have passed from resetting tilt
-    if input.tilt_reset_frames <= 0.{
+    // Only allow rolling after some frames have passed from resetting roll
+    if input.roll_reset_frames <= 0.{
         // Right shoulder
         if (gp.wButtons & (0x0200)) != 0 {
-            input.delta_rotation = 1.57079633; // Tilt camera 90deg
-            println!("{} {}", "Camera tilted".bright_white(), "90°".bright_blue());
+            input.delta_rotation = 1.57079633; // Roll camera 90deg
+            println!("{} {}", "Camera rolled".bright_white(), "90°".bright_blue());
         }
 
         // Left shoulder
         if (gp.wButtons & (0x0100)) != 0 {
-            input.delta_rotation = -1.57079633; // Tilt camera -90deg
-            println!("{} {}", "Camera tilted".bright_white(), "-90°".bright_blue());
+            input.delta_rotation = -1.57079633; // Roll camera -90deg
+            println!("{} {}", "Camera rolled".bright_white(), "-90°".bright_blue());
         }
     }
 
     if (gp.wButtons & (0x0200 | 0x0100)) == (0x0200 | 0x0100) {
         input.delta_rotation = 0.;
-        input.tilt_reset_frames = input.tilt_reset_max_frames;
-        println!("{} {}", "Camera tilt".bright_white(), "reset".bright_blue());
+        input.roll_reset_frames = input.roll_reset_max_frames;
+        println!("{} {}", "Camera roll".bright_white(), "reset".bright_blue());
     }
 
     // B
@@ -401,7 +401,7 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     input.delta_altitude *= input.speed_multiplier;
 
     if input.rot_reset_frames > 0. { input.rot_reset_frames = input.rot_reset_frames - 1.; }
-    if input.tilt_reset_frames > 0. { input.tilt_reset_frames = input.tilt_reset_frames - 1.; }
+    if input.roll_reset_frames > 0. { input.roll_reset_frames = input.roll_reset_frames - 1.; }
 }
 
 #[no_mangle]
