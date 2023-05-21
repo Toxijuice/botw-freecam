@@ -1,12 +1,19 @@
 use crate::globals::*;
 use nalgebra_glm as glm;
-use std::ffi::CString;
-use winapi::um::{winuser, xinput};
+use windows_sys::Win32::UI::{
+    Input::{
+        KeyboardAndMouse::*,
+        XboxController::{XInputGetState, XINPUT_STATE},
+    },
+    WindowsAndMessaging::MessageBoxA,
+};
+use colored::*;
 
 const DEADZONE: i16 = 10000;
 const MINIMUM_ENGINE_SPEED: f32 = 1e-3;
 
-pub const INSTRUCTIONS: &str = "------------------------------
+pub const INSTRUCTIONS: &str =
+"------------------------------
 USAGE:
 F2 / L2 + Circle / RT + B\t\tActivation
 WASD + Arrow keys / Sticks\t\tCamera movement
@@ -46,8 +53,8 @@ pub enum Keys {
     A = 0x41, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 }
 
-pub fn check_key_press(key: i32) -> bool {
-    (unsafe { winuser::GetAsyncKeyState(key) } as u32) & 0x8000 != 0
+pub fn check_key_press(key: u16) -> bool {
+    (unsafe { GetAsyncKeyState(key as _) } as u32) & 0x8000 != 0
 }
 
 pub fn calc_eucl_distance(a: &glm::Vec3, b: &glm::Vec3) -> f32 {
@@ -79,6 +86,16 @@ pub struct Input {
     pub dolly_increment: f32,
 
     pub unlock_character: bool,
+
+    pub tilt_reset_frames: f32,
+    pub rot_reset_frames: f32,
+    pub tilt_reset_max_frames: f32,
+    pub rot_reset_max_frames: f32,
+    pub rot_speed: f32,
+    pub delta_sign_x: f32,
+    pub delta_sign_y: f32,
+    pub rot_shift_x: f32,
+    pub rot_shift_y: f32,
 }
 
 impl Input {
@@ -89,6 +106,15 @@ impl Input {
             speed_multiplier: 1.,
             dolly_duration: 10.,
             dolly_increment: 0.01,
+            tilt_reset_frames: 0.,
+            rot_reset_frames: 0.,
+            tilt_reset_max_frames: 10.,
+            rot_reset_max_frames: 30.,
+            rot_speed: 0.75,
+            delta_sign_x: 1.,
+            delta_sign_y: 1.,
+            rot_shift_x: 0.78539816,
+            rot_shift_y: 0.6981317,
             ..Input::default()
         }
     }
@@ -138,11 +164,11 @@ pub fn handle_keyboard(input: &mut Input) {
             };
 
             ([ $key_pos:expr, $key_neg:expr, $pos_do:expr, $neg_do:expr ]; $($tt:tt)*) => {
-                if (winuser::GetAsyncKeyState($key_pos as i32) as u32 & 0x8000) != 0 {
+                if (GetAsyncKeyState($key_pos as i32) as u32 & 0x8000) != 0 {
                     $pos_do;
                 }
 
-                if (winuser::GetAsyncKeyState($key_neg as i32) as u32 & 0x8000) != 0 {
+                if (GetAsyncKeyState($key_neg as i32) as u32 & 0x8000) != 0 {
                     $neg_do;
                 }
                 handle_state!($($tt)*);
@@ -154,7 +180,7 @@ pub fn handle_keyboard(input: &mut Input) {
     unsafe {
         handle_state! {
                 // Others
-                [winuser::VK_F2, winuser::VK_F3, input.change_active = true, input.change_active = false];
+                [VK_F2, VK_F3, input.change_active = true, input.change_active = false];
         }
     }
 
@@ -167,18 +193,18 @@ pub fn handle_keyboard(input: &mut Input) {
             // Position of the camer
             [Keys::W, Keys::S, input.delta_pos.1 = 0.02, input.delta_pos.1 = -0.02];
             [Keys::A, Keys::D, input.delta_pos.0 = 0.02, input.delta_pos.0 = -0.02];
-            [winuser::VK_UP, winuser::VK_DOWN, input.delta_focus.1 = -0.02, input.delta_focus.1 = 0.02];
-            [winuser::VK_LEFT, winuser::VK_RIGHT, input.delta_focus.0 = -0.02, input.delta_focus.0 = 0.02];
+            [VK_UP, VK_DOWN, input.delta_focus.1 = -0.02, input.delta_focus.1 = 0.02];
+            [VK_LEFT, VK_RIGHT, input.delta_focus.0 = -0.02, input.delta_focus.0 = 0.02];
 
             [Keys::Q, Keys::E, input.delta_altitude -= 0.02, input.delta_altitude += 0.02];
 
             // Rotation
-            [winuser::VK_NEXT, winuser::VK_PRIOR, input.delta_rotation += 0.02, input.delta_rotation -= 0.02];
+            [VK_NEXT, VK_PRIOR, input.delta_rotation += 0.02, input.delta_rotation -= 0.02];
 
             //  FoV
-            [winuser::VK_F5, winuser::VK_F6, input.fov -= 0.02, input.fov += 0.02];
+            [VK_F5, VK_F6, input.fov -= 0.02, input.fov += 0.02];
 
-            [winuser::VK_F3, winuser::VK_F4, input.speed_multiplier -= 0.01, input.speed_multiplier += 0.01];
+            [VK_F3, VK_F4, input.speed_multiplier -= 0.01, input.speed_multiplier += 0.01];
 
         }
     }
@@ -195,13 +221,13 @@ pub fn handle_keyboard(input: &mut Input) {
         input.dolly_increment = 0.01
     }
 
-    if check_key_press(winuser::VK_LSHIFT) {
+    if check_key_press(VK_LSHIFT) {
         input.delta_pos.0 *= 8.;
         input.delta_pos.1 *= 8.;
         input.delta_altitude *= 8.;
     }
 
-    if check_key_press(winuser::VK_TAB) {
+    if check_key_press(VK_TAB) {
         input.delta_pos.0 *= 0.2;
         input.delta_pos.1 *= 0.2;
         input.delta_altitude *= 0.2;
@@ -213,24 +239,35 @@ pub fn handle_keyboard(input: &mut Input) {
 }
 
 pub fn error_message(message: &str) {
-    let title = CString::new("Error while patching").unwrap();
-    let message = CString::new(message).unwrap();
+    let title = String::from("Error while patching\0");
+    let message = format!("{}\0", message);
 
     unsafe {
-        winapi::um::winuser::MessageBoxA(
-            std::ptr::null_mut(),
-            message.as_ptr(),
-            title.as_ptr(),
-            0x10,
-        );
+        MessageBoxA(0, message.as_ptr(), title.as_ptr(), 0x10);
     }
 }
 
-pub fn handle_controller(input: &mut Input, func: fn(u32, &mut xinput::XINPUT_STATE) -> u32) {
-    let mut xs: xinput::XINPUT_STATE = unsafe { std::mem::zeroed() };
+pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> u32) {
+    let mut xs: XINPUT_STATE = unsafe { std::mem::zeroed() };
     func(0, &mut xs);
 
     let gp = xs.Gamepad;
+
+    // [wButtons]
+    // XINPUT_GAMEPAD_DPAD_UP 	        0x0001
+    // XINPUT_GAMEPAD_DPAD_DOWN 	    0x0002
+    // XINPUT_GAMEPAD_DPAD_LEFT 	    0x0004
+    // XINPUT_GAMEPAD_DPAD_RIGHT 	    0x0008
+    // XINPUT_GAMEPAD_START 	        0x0010
+    // XINPUT_GAMEPAD_BACK 	            0x0020
+    // XINPUT_GAMEPAD_LEFT_THUMB 	    0x0040
+    // XINPUT_GAMEPAD_RIGHT_THUMB 	    0x0080
+    // XINPUT_GAMEPAD_LEFT_SHOULDER 	0x0100
+    // XINPUT_GAMEPAD_RIGHT_SHOULDER 	0x0200
+    // XINPUT_GAMEPAD_A 	            0x1000
+    // XINPUT_GAMEPAD_B 	            0x2000
+    // XINPUT_GAMEPAD_X 	            0x4000
+    // XINPUT_GAMEPAD_Y 	            0x8000
 
     // check camera activation
     if gp.bLeftTrigger > 150 && ((gp.wButtons & 0x2000) == 0x2000) {
@@ -238,36 +275,51 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut xinput::XINPUT_ST
     }
 
     // Update the camera changes only if it's listening
-    if !input.is_active {
-        return;
-    }
+    if !input.is_active { return; }
 
     // modify speed
-    if (gp.wButtons & 0x4) != 0 {
+    // A
+    if (gp.wButtons & 0x1000) != 0 {
         input.speed_multiplier -= 0.01;
+        println!("{} {}", "Speed:".bright_white(), input.speed_multiplier.to_string().bright_blue());
     }
-    if (gp.wButtons & 0x8) != 0 {
+    // X
+    if (gp.wButtons & 0x4000) != 0 {
         input.speed_multiplier += 0.01;
+        println!("{} {}", "Speed:".bright_white(), input.speed_multiplier.to_string().bright_blue());
     }
 
-    if (gp.wButtons & (0x200)) != 0 {
-        input.delta_rotation += 0.01;
+    // Only allow tilting after some frames have passed from resetting tilt
+    if input.tilt_reset_frames <= 0.{
+        // Right shoulder
+        if (gp.wButtons & (0x0200)) != 0 {
+            input.delta_rotation = 1.57079633; // Tilt camera 90deg
+            println!("{} {}", "Camera tilted".bright_white(), "90°".bright_blue());
+        }
+
+        // Left shoulder
+        if (gp.wButtons & (0x0100)) != 0 {
+            input.delta_rotation = -1.57079633; // Tilt camera -90deg
+            println!("{} {}", "Camera tilted".bright_white(), "-90°".bright_blue());
+        }
     }
 
-    if (gp.wButtons & (0x100)) != 0 {
-        input.delta_rotation -= 0.01;
-    }
-
-    if (gp.wButtons & (0x200 | 0x100)) == (0x200 | 0x100) {
+    if (gp.wButtons & (0x0200 | 0x0100)) == (0x0200 | 0x0100) {
         input.delta_rotation = 0.;
+        input.tilt_reset_frames = input.tilt_reset_max_frames;
+        println!("{} {}", "Camera tilt".bright_white(), "reset".bright_blue());
     }
 
-    if (gp.wButtons & 0x1) != 0 {
-        input.fov -= 0.01;
-    }
-
-    if (gp.wButtons & 0x2) != 0 {
+    // B
+    if (gp.wButtons & 0x2000) != 0 {
         input.fov += 0.01;
+        println!("{} {}", "FOV:".bright_white(), input.fov.to_string().bright_blue());
+    }
+
+    // Y
+    if (gp.wButtons & 0x8000) != 0 {
+        input.fov -= 0.01;
+        println!("{} {}", "FOV:".bright_white(), input.fov.to_string().bright_blue());
     }
 
     input.delta_altitude += -(gp.bLeftTrigger as f32) / 5e3;
@@ -283,35 +335,81 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut xinput::XINPUT_ST
         };
     }
 
-    input.delta_pos.0 =
-        -(dead_zone!(gp.sThumbLX) as f32) / ((i16::MAX as f32) * 1e2) * input.speed_multiplier;
-    input.delta_pos.1 =
-        (dead_zone!(gp.sThumbLY) as f32) / ((i16::MAX as f32) * 1e2) * input.speed_multiplier;
+    input.delta_pos.0 = -(dead_zone!(gp.sThumbLX) as f32) / ((i16::MAX as f32) * 1e2) * input.speed_multiplier;
+    input.delta_pos.1 =  (dead_zone!(gp.sThumbLY) as f32) / ((i16::MAX as f32) * 1e2) * input.speed_multiplier;
 
     input.delta_focus.0 = (dead_zone!(gp.sThumbRX) as f32) / ((i16::MAX as f32) * 4e1);
     input.delta_focus.1 = -(dead_zone!(gp.sThumbRY) as f32) / ((i16::MAX as f32) * 4e1);
 
+    // Negative check
+    if input.delta_focus.0 < 0. { input.delta_sign_x = -1.; }
+    else {  input.delta_sign_x = 1.; }
+
+    if input.delta_focus.1 < 0. { input.delta_sign_y = -1.; }
+    else {  input.delta_sign_y = 1.; }
+
+    // Change range from 0.000 - 0.025 to 0.0 - 1.0
+    input.delta_focus.0 = input.delta_focus.0 * 40.;
+    input.delta_focus.1 = input.delta_focus.1 * 40.;
+
+    // Squared curve, apply negative
+    input.delta_focus.0 = input.delta_focus.0 * input.delta_focus.0 * input.delta_sign_x;
+    input.delta_focus.1 = input.delta_focus.1 * input.delta_focus.1 * input.delta_sign_y;
+
+    // Revert range to 0.000 - 0.025
+    input.delta_focus.0 = input.delta_focus.0 * 0.025;
+    input.delta_focus.1 = input.delta_focus.1 * 0.025;
+
+    // Scale speed depending on fov
+    input.delta_focus.0 = input.delta_focus.0 * (input.fov + 0.01) * input.rot_speed;
+    input.delta_focus.1 = input.delta_focus.1 * (input.fov + 0.01) * input.rot_speed;
+
+    // Only allow rotating after some frames have passed
+    if input.rot_reset_frames <= 0.{
+        // DPAD Up
+        if (gp.wButtons & (0x0001)) != 0 {
+            input.delta_focus.1 = -input.rot_shift_y;
+            input.rot_reset_frames = input.rot_reset_max_frames;
+        } 
+        // DPAD Down
+        else if (gp.wButtons & (0x0002)) != 0 {
+            input.delta_focus.1 = input.rot_shift_y;
+            input.rot_reset_frames = input.rot_reset_max_frames;
+        }
+
+        // DPAD Left
+        if (gp.wButtons & (0x0004)) != 0 {
+            input.delta_focus.0 = -input.rot_shift_x;
+            input.rot_reset_frames = input.rot_reset_max_frames;
+        } 
+        // DPAD Right
+        else if (gp.wButtons & (0x0008)) != 0 {
+            input.delta_focus.0 = input.rot_shift_x;
+            input.rot_reset_frames = input.rot_reset_max_frames;
+        }
+    }
+
+
+    if input.delta_focus.0 != 0. {
+        println!("{} {}", "rot dx:".bright_white(), input.delta_focus.0.to_string().bright_blue());
+    }
+
+    if input.delta_focus.1 != 0. {
+        println!("{} {}", "rot dy:".bright_white(), input.delta_focus.1.to_string().bright_blue());
+    }
+
     input.delta_altitude *= input.speed_multiplier;
 
-    if gp.wButtons & 0x1000 != 0 {
-        input.delta_pos.0 *= 8.;
-        input.delta_pos.1 *= 8.;
-        input.delta_altitude *= 8.;
-    }
-
-    if gp.wButtons & 0x4000 != 0 {
-        input.delta_pos.0 *= 0.2;
-        input.delta_pos.1 *= 0.2;
-        input.delta_altitude *= 0.2;
-    }
+    if input.rot_reset_frames > 0. { input.rot_reset_frames = input.rot_reset_frames - 1.; }
+    if input.tilt_reset_frames > 0. { input.tilt_reset_frames = input.tilt_reset_frames - 1.; }
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn dummy_xinput(a: u32, b: &mut xinput::XINPUT_STATE) -> u32 {
+pub unsafe extern "system" fn dummy_xinput(a: u32, b: &mut XINPUT_STATE) -> u32 {
     if g_camera_active != 0 {
         *b = std::mem::zeroed();
         return 0;
     }
 
-    xinput::XInputGetState(a, b)
+    XInputGetState(a, b)
 }
