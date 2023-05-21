@@ -1,0 +1,59 @@
+== CONTROLS =====================================
+
+[KEYBOARD]
+HOME ---------- Close Freecam
+
+F2 ------------ Activate / Deactivate
+F7 ------------ Unlock Character
+
+WASD ---------- Move
+Arrow Keys ---- Rotate
+
+F3 ------------ Move speed down
+F4 ------------ Move speed up
+Tab ----------- Move speed down (While held)
+LShift -------- Move speed up (While held)
+
+F5 ------------ Zoom in
+F6 ------------ Zoom out
+
+PgUp ---------- Roll Left
+PgDn ---------- Roll Right
+PgUp + PgDn --- Roll Reset
+
+Q ------------- Descend
+E ------------- Ascend
+
+F8 ------------ Stop Playing Sequence
+F9 ------------ Add Point to Sequence
+F10 ----------- Play Sequence
+F11 ----------- Clean Sequence
+L ------------- Play Sequence Looped
+O ------------- Shorten Sequence
+P ------------- Lengthen Sequence
+
+
+[GAMEPAD]
+LB + B -------- Activate / Deactivate
+
+LStick -------- Move
+RStick -------- Rotate
+
+DPAD Up ------- Tilt up 40°
+DPAD Down ----- Tilt down 40°
+DPAD Left ----- Rotate left 45°
+DPAD Right ---- Rotate right 45°
+
+Y ------------- Zoom in
+B ------------- Zoom out
+X ------------- Move speed up
+A ------------- Move speed down
+
+LB ------------ Roll Left 90°
+RB ------------ Roll Right 90°
+LB + RB ------- Roll Reset
+
+LT ------------ Descend
+RT ------------ Ascend
+
+=================================================

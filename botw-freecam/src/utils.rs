@@ -13,25 +13,7 @@ const DEADZONE: i16 = 10000;
 const MINIMUM_ENGINE_SPEED: f32 = 1e-3;
 
 pub const INSTRUCTIONS: &str =
-"------------------------------
-USAGE:
-F2 / L2 + Circle / RT + B\t\tActivation
-WASD + Arrow keys / Sticks\t\tCamera movement
-Q - E / R2 - L2 / RT - LT\t\tCamera's height
-F5 - F6 / Up - Down\t\t\tFov control
-PgUp - PgDown / R1 - L1 / RB - LB\tRotation
-F3 - F4 / dpad left - dpad right\tChange movement speed
-Shift / X / A\t\t\t\tAccelerates temporarily
-Tab / Circle / B\t\t\tDecelerate temporarily
-F7\t\t\t\t\tUnlock the character (Locks the camera)
------ Sequence keys -----
-F8\t\t\t\t\tBreaks a current sequence playing
-F9\t\t\t\t\tAdd a point to the sequence
-F10\t\t\t\t\tPlays the sequence
-F11\t\t\t\t\tCleans the sequence
-L\t\t\t\t\tPlays the sequence in a loop (F8 to break it)
-O/P\t\t\t\t\tChange the duration of the sequence
-------------------------------";
+"Read instructions.txt for controls.";
 
 const CARGO_VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const GIT_VERSION: Option<&'static str> = option_env!("GIT_VERSION");
