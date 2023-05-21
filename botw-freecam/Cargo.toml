@@ -1,8 +1,8 @@
 [package]
-authors = ["Sebastián Aedo <sebastian.aedo29@gmail.com>"]
+authors = ["Sebastián Aedo <sebastian.aedo29@gmail.com>", "Toxijuice"]
 edition = "2018"
 name = "botw-freecam"
-version = "0.2.7"
+version = "0.2.7-toximod"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
