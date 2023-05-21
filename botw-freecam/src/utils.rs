@@ -312,13 +312,13 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
 
     // B
     if (gp.wButtons & 0x2000) != 0 {
-        input.fov += 0.01;
+        input.fov += 0.005;
         println!("{} {}", "FOV:".bright_white(), input.fov.to_string().bright_blue());
     }
 
     // Y
     if (gp.wButtons & 0x8000) != 0 {
-        input.fov -= 0.01;
+        input.fov -= 0.005;
         println!("{} {}", "FOV:".bright_white(), input.fov.to_string().bright_blue());
     }
 
