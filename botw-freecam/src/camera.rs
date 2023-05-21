@@ -80,9 +80,15 @@ impl GameCamera {
             - input.delta_pos.0 * r_cam_x)
             .into();
 
-        self.focus.0[0] = (f32::from(self.pos.0[0]) + r_cam_x).into();
-        self.focus.0[1] = (f32::from(self.pos.0[1]) + r_cam_y).into();
-        self.focus.0[2] = (f32::from(self.pos.0[2]) + r_cam_z).into();
+        if input.reset_rot {
+            self.focus.0[0] = (f32::from(self.pos.0[0]) + 0.0).into();
+            self.focus.0[1] = (f32::from(self.pos.0[1]) + 0.0).into();
+            self.focus.0[2] = (f32::from(self.pos.0[2]) + -5.0).into();
+        }else{
+            self.focus.0[0] = (f32::from(self.pos.0[0]) + r_cam_x).into();
+            self.focus.0[1] = (f32::from(self.pos.0[1]) + r_cam_y).into();
+            self.focus.0[2] = (f32::from(self.pos.0[2]) + r_cam_z).into();
+        }
 
         let pos_ = glm::Vec3::from(self.pos);
         let focus_ = glm::Vec3::from(self.focus);

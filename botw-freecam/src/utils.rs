@@ -73,6 +73,9 @@ pub struct Input {
     pub both_shoulders_held: bool,
     pub any_dpad_held: bool,
     pub left_thumb_held: bool,
+    pub right_thumb_held: bool,
+
+    pub reset_rot: bool,
 
     pub fov_preset_index: i32,
     pub rot_speed: f32,
@@ -98,6 +101,8 @@ impl Input {
             both_shoulders_held: false,
             any_dpad_held: false,
             left_thumb_held: false,
+            right_thumb_held: false,
+            reset_rot: false,
             rot_shift_x: 0.78539816,
             rot_shift_y: 0.6981317,
             ..Input::default()
@@ -109,6 +114,7 @@ impl Input {
         self.delta_focus = (0., 0.);
         self.delta_altitude = 0.;
         self.change_active = false;
+        self.reset_rot = false;
 
         #[cfg(debug_assertions)]
         {
@@ -262,23 +268,26 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     // Update the camera changes only if it's listening
     if !input.is_active { return; }
 
+    // Make sure we're not resetting every frame
+    input.reset_rot = false;
+
     // modify speed
     // A
     if (gp.wButtons & 0x1000) != 0 {
         input.speed_multiplier -= 0.01;
-        println!("{} {}", "Speed:".bright_white(), input.speed_multiplier.to_string().bright_blue());
+        println!("{}{}", "Speed: ".bright_white(), input.speed_multiplier.to_string().bright_blue());
     }
     // X
     if (gp.wButtons & 0x4000) != 0 {
         input.speed_multiplier += 0.01;
-        println!("{} {}", "Speed:".bright_white(), input.speed_multiplier.to_string().bright_blue());
+        println!("{}{}", "Speed: ".bright_white(), input.speed_multiplier.to_string().bright_blue());
     }
 
     // Right shoulder
     if (gp.wButtons & (0x0200)) != 0 {
         if !input.any_shoulder_held {
             input.delta_rotation += 1.57079633; // Roll camera 90deg
-            println!("{} {}", "Camera rolled".bright_white(), "90°".bright_blue());
+            println!("{}{}", "Camera rolled ".bright_white(), "90°".bright_blue());
         }
         
         input.any_shoulder_held = true;
@@ -287,7 +296,7 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     else if (gp.wButtons & (0x0100)) != 0 {
         if !input.any_shoulder_held {
             input.delta_rotation += -1.57079633; // Roll camera -90deg
-            println!("{} {}", "Camera rolled".bright_white(), "-90°".bright_blue());
+            println!("{}{}", "Camera rolled ".bright_white(), "-90°".bright_blue());
         }
 
         input.any_shoulder_held = true;
@@ -300,7 +309,7 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     if (gp.wButtons & (0x0200 | 0x0100)) == (0x0200 | 0x0100) {
         if !input.both_shoulders_held {
             input.delta_rotation = 0.;
-            println!("{} {}", "Camera roll".bright_white(), "reset".bright_blue());
+            println!("{}{}", "Camera roll ".bright_white(), "reset".bright_blue());
         }
 
         input.both_shoulders_held = true;
@@ -424,6 +433,21 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     }
     else {
         input.any_dpad_held = false;
+    }
+
+    // Right thumb
+    if (gp.wButtons & (0x0080)) != 0 {
+        if !input.right_thumb_held {
+            input.delta_focus = (0., 0.);
+            input.delta_rotation = 0.;
+            input.reset_rot = true;
+            println!("{}{}", "Camera rot ".bright_white(), "reset".bright_blue());
+        }
+        
+        input.right_thumb_held = true;
+    }
+    else {
+        input.right_thumb_held = false;
     }
 
 

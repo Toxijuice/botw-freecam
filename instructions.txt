@@ -41,6 +41,9 @@ LB + B -------- Activate / Deactivate
 LStick -------- Move
 RStick -------- Rotate
 
+LStick Click -- Cycle FOV Presets
+RStick Click -- Reset camera rotation
+
 DPAD Up ------- Tilt up 40°
 DPAD Down ----- Tilt down 40°
 DPAD Left ----- Rotate left 45°
