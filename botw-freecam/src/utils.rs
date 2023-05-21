@@ -293,13 +293,13 @@ pub fn handle_controller(input: &mut Input, func: fn(u32, &mut XINPUT_STATE) -> 
     if input.roll_reset_frames <= 0.{
         // Right shoulder
         if (gp.wButtons & (0x0200)) != 0 {
-            input.delta_rotation = 1.57079633; // Roll camera 90deg
+            input.delta_rotation += 1.57079633; // Roll camera 90deg
             println!("{} {}", "Camera rolled".bright_white(), "90°".bright_blue());
         }
 
         // Left shoulder
         if (gp.wButtons & (0x0100)) != 0 {
-            input.delta_rotation = -1.57079633; // Roll camera -90deg
+            input.delta_rotation += -1.57079633; // Roll camera -90deg
             println!("{} {}", "Camera rolled".bright_white(), "-90°".bright_blue());
         }
     }
